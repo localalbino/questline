@@ -1,5 +1,6 @@
 import { db } from "@/db";
-import { boardsTable, MAX_BOARDS_PER_USER } from "@/db/schema";
+import { MAX_BOARDS_PER_USER } from "@/db/boards";
+import { boardsTable } from "@/db/schema";
 import { requireVerifiedSession } from "@/lib/session";
 import { BoardsList } from "@/ui/components/BoardsList";
 import { LinkButton } from "@/ui/components/LinkButton";

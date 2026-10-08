@@ -65,16 +65,17 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => {
-      // Sent after the response so response time doesn't reveal whether the account exists.
-      after(() =>
-        sendEmail(
-          user.email,
-          "Reset your password",
-          `Click this link to reset your password: ${url}\n\nDidn't request a password reset? Ignore this email.`,
-        ).catch((error) => console.error(error)),
-      );
-    },
+    sendResetPassword: ({ user, url }) =>
+      sendEmail(
+        user.email,
+        "Reset your password",
+        `Click this link to reset your password: ${url}\n\nDidn't request a password reset? Ignore this email.`,
+      ),
+  },
+  advanced: {
+    // Emails are sent after the response so response time doesn't reveal whether the account exists.
+    // Better Auth catches and logs failures before handing the promise over.
+    backgroundTasks: { handler: (promise) => after(promise) },
   },
   hooks: {
     // Reject a reset to the user's current password. This runs before the endpoint so the reset

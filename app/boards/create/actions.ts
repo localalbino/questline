@@ -1,0 +1,38 @@
+"use server";
+
+import { z } from "zod";
+import { CreateBoardFormState, createBoardSchema } from "./schema";
+import { requireVerifiedSession } from "@/lib/session";
+import { db } from "@/db";
+import { boardsTable } from "@/db/schema";
+import { userCanCreateBoards } from "@/db/boards";
+import { redirect } from "next/navigation";
+
+export async function submitCreateBoardForm(
+  prevState: CreateBoardFormState,
+  formData: FormData,
+): Promise<CreateBoardFormState> {
+  const validatedFields = createBoardSchema.safeParse({
+    title: formData.get("title"),
+  });
+
+  if (!validatedFields.success) {
+    return { success: false, errors: z.flattenError(validatedFields.error).fieldErrors };
+  }
+
+  const session = await requireVerifiedSession();
+  if (!(await userCanCreateBoards(session))) {
+    redirect("/boards");
+  }
+
+  const boards = await db
+    .insert(boardsTable)
+    .values({ title: validatedFields.data.title, ownerId: session.user.id })
+    .returning();
+
+  if (boards.length <= 0) {
+    return { success: false };
+  }
+
+  redirect(`/boards/${boards[0].id}`);
+}

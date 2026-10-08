@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 
+export type Session = typeof auth.$Infer.Session;
+
 // Cached so multiple checks in one render only hit the database once.
 export const getSession = cache(async () => auth.api.getSession({ headers: await headers() }));
 
