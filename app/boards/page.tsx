@@ -22,7 +22,9 @@ export default async function BoardsPage() {
       <h1 className="text-center text-lg">Your boards</h1>
       <BoardsList boards={boards} />
       {boards.length < MAX_BOARDS_PER_USER ? (
-        <LinkButton href="/boards/create">+ New board</LinkButton>
+        <LinkButton href="/boards/create" variant="outline">
+          + New board
+        </LinkButton>
       ) : (
         <span className="text-center text-zinc-600">You cannot create any more boards</span>
       )}
