@@ -20,6 +20,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Testing
+
+Tests use [Vitest](https://vitest.dev/) with React Testing Library, jsdom, and the `@/` TypeScript path alias.
+
+```bash
+npm test          # Watch mode
+npm run test:run  # Run once (CI)
+```
+
+Name tests `*.test.ts` or `*.test.tsx`. Import test APIs from `vitest` and component helpers from `@testing-library/react`; rendered components are cleaned up after each test. For server-side utilities, add `// @vitest-environment node` at the top of the test file, as in the IGDB client suite. Its requests and credentials are mocked, so no IGDB credentials are needed.
+
+Vitest does not support async Server Components; cover those with end-to-end tests.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
