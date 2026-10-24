@@ -1,14 +1,18 @@
 import { defineRelationsPart } from "drizzle-orm";
 import { authRelations } from "./auth-schema";
-import { boardsTable, cardsTable, groupsTable, user } from "./schema";
+import { boardsTable, cardsTable, experienceTable, groupsTable, user } from "./schema";
 
 const appRelations = defineRelationsPart(
-  { user, boards: boardsTable, groups: groupsTable, cards: cardsTable },
+  { user, boards: boardsTable, groups: groupsTable, cards: cardsTable, experience: experienceTable },
   (r) => ({
     user: {
       boards: r.many.boards({
         from: r.user.id,
         to: r.boards.ownerId,
+      }),
+      experience: r.one.experience({
+        from: r.user.id,
+        to: r.experience.userId,
       }),
     },
     boards: {
@@ -37,6 +41,13 @@ const appRelations = defineRelationsPart(
       group: r.one.groups({
         from: r.cards.groupId,
         to: r.groups.id,
+        optional: false,
+      }),
+    },
+    experience: {
+      user: r.one.user({
+        from: r.experience.userId,
+        to: r.user.id,
         optional: false,
       }),
     },

@@ -1,3 +1,4 @@
+import { xpForTimeToBeat } from "@/lib/experience";
 import type { GameDetails } from "@/lib/igdb-client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -148,7 +149,10 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
                     {[game.releaseDate?.getFullYear(), game.publishers[0]].filter(Boolean).join(" · ")}
                   </span>
                 </div>
-                <span className="ml-auto shrink-0 text-emerald-500">{addingId === game.id ? "Adding…" : "+ Add"}</span>
+                <div className="ml-auto flex shrink-0 flex-col items-end">
+                  <span className="text-emerald-500">{addingId === game.id ? "Adding…" : "+ Add"}</span>
+                  <XpReward xp={xpForTimeToBeat(game.timeToBeat)} />
+                </div>
               </button>
             </li>
           ))}
@@ -169,4 +173,9 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
       </div>
     </dialog>
   );
+}
+
+function XpReward({ xp }: { xp: number | null }) {
+  if (xp === null) return <span className="text-xs text-zinc-600">No XP data</span>;
+  return <span className="text-xs text-zinc-500">{xp} XP</span>;
 }

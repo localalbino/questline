@@ -1,5 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { xpForTimeToBeat } from "@/lib/experience";
 import { cn } from "cn";
 import Image from "next/image";
 import { useState } from "react";
@@ -58,7 +59,7 @@ function CardContents({ card, onUpdate }: { card: BoardCard; onUpdate?: (changes
       <BoxArt url={card.game?.boxArtUrl ?? null} title={title} />
       <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs">
         <span className={cn("line-clamp-2 text-sm", card.isCompleted && "text-zinc-500 line-through")}>{title}</span>
-        <span className="text-zinc-500">{formatTimeToBeat(card.game?.timeToBeat ?? null)}</span>
+        <XpReward xp={xpForTimeToBeat(card.game?.timeToBeat ?? null)} isCompleted={card.isCompleted} />
         <DueDate
           dueDate={card.dueDate}
           isCompleted={card.isCompleted}
@@ -78,6 +79,12 @@ function CardContents({ card, onUpdate }: { card: BoardCard; onUpdate?: (changes
       </div>
     </>
   );
+}
+
+function XpReward({ xp, isCompleted }: { xp: number | null; isCompleted: boolean }) {
+  if (xp === null) return <span className="text-zinc-600">No XP data</span>;
+  if (isCompleted) return <span className="text-emerald-500">{xp} XP earned</span>;
+  return <span className="text-zinc-500">+{xp} XP</span>;
 }
 
 function BoxArt({ url, title }: { url: string | null; title: string }) {
@@ -164,11 +171,4 @@ function fromDateInputValue(value: string): Date {
 function formatDueDate(date: Date): string {
   // Fixed locale so the server and client render the same text.
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-}
-
-function formatTimeToBeat(seconds: number | null): string {
-  if (seconds === null) return "Time to beat unknown";
-  const hours = seconds / 3600;
-  if (hours < 1) return `~${Math.max(1, Math.round(seconds / 60))}m to beat`;
-  return `~${Math.round(hours)}h to beat`;
 }

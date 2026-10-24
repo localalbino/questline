@@ -48,3 +48,10 @@ export const rateLimitsTable = pgTable("rate_limits", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   lastRequestAt: timestamp("last_request_at", { withTimezone: true }).notNull(),
 });
+// Total experience a user has earned from completing games.
+export const experienceTable = pgTable("experience", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  xp: integer().notNull().default(0),
+});
