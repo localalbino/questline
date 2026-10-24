@@ -22,3 +22,14 @@ export function levelForXp(totalXp: number): number {
   if (xpForLevel(level) > xp) return level - 1;
   return level;
 }
+
+/** Where a total lands on the curve: the current level and how far through it the user is. */
+export function levelProgress(totalXp: number) {
+  const level = levelForXp(totalXp);
+  const levelStart = xpForLevel(level);
+  return {
+    level,
+    xpIntoLevel: Math.max(0, totalXp) - levelStart,
+    xpForNextLevel: xpForLevel(level + 1) - levelStart,
+  };
+}

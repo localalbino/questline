@@ -1,13 +1,28 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from ".";
 import { cardsTable, experienceTable } from "./schema";
+
+/** The user's total XP. Users who haven't completed anything yet have no row and count as 0. */
+export async function getXp(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ xp: experienceTable.xp })
+    .from(experienceTable)
+    .where(eq(experienceTable.userId, userId))
+    .limit(1);
+  return row?.xp ?? 0;
+}
 
 /**
  * Marks a card completed or not and moves the user's XP by the game's reward in the same statement.
  * XP only changes when the card's completion actually flips, so a repeated or stale request can't
- * award twice, and the total never drops below zero.
+ * award twice, and the total never drops below zero. Returns the user's new total.
  */
-export async function setCardCompleted(userId: string, cardId: number, isCompleted: boolean, xp: number) {
+export async function setCardCompleted(
+  userId: string,
+  cardId: number,
+  isCompleted: boolean,
+  xp: number,
+): Promise<number> {
   const delta = isCompleted ? xp : -xp;
   // Postgres doesn't allow table-qualified columns in SET or INSERT column lists.
   const col = (column: { name: string }) => sql.identifier(column.name);
@@ -22,4 +37,5 @@ export async function setCardCompleted(userId: string, cardId: number, isComplet
     ON CONFLICT (${col(experienceTable.userId)})
     DO UPDATE SET ${col(experienceTable.xp)} = GREATEST(${experienceTable.xp} + ${delta}::integer, 0)
   `);
+  return getXp(userId);
 }

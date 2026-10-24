@@ -1,6 +1,7 @@
 import { getBoardContents } from "@/db/boards";
 import { igdbClient, type GameDetails } from "@/lib/igdb-client";
 import { requireVerifiedSession } from "@/lib/session";
+import { PageHeader } from "@/ui/components/PageHeader";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BoardView } from "./BoardView";
@@ -46,13 +47,13 @@ export default async function BoardPage({ params }: PageProps<"/boards/[id]">) {
 
   return (
     <main className="flex h-dvh flex-col">
-      <header className="flex items-center gap-4 border-b border-zinc-800 px-4 py-3">
-        <Link href="/boards" className="text-zinc-600 hover:text-emerald-500">
+      <PageHeader>
+        <Link href="/boards" className="shrink-0 text-zinc-600 hover:text-emerald-500">
           ← Boards
         </Link>
-        <h1 className="text-lg">{board.title}</h1>
-        {!games && <span className="ml-auto text-sm text-red-400">Couldn&apos;t load game details from IGDB</span>}
-      </header>
+        <h1 className="truncate text-lg">{board.title}</h1>
+        {!games && <span className="truncate text-sm text-red-400">Couldn&apos;t load game details from IGDB</span>}
+      </PageHeader>
       <BoardView boardId={board.id} initialGroups={groups} />
     </main>
   );

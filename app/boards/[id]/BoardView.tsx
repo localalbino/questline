@@ -21,6 +21,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+import { useXp } from "@/ui/components/XpProvider";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
 import { createGroupAction, moveCardAction, moveGroupAction, renameGroupAction, updateCardAction } from "./actions";
@@ -76,6 +77,7 @@ const collisionDetection: CollisionDetection = (args) => {
 
 export function BoardView({ boardId, initialGroups }: { boardId: number; initialGroups: BoardGroup[] }) {
   const router = useRouter();
+  const { setXp } = useXp();
   const dndId = useId();
 
   // Local state is the source of truth while editing; actions persist in the background.
@@ -99,13 +101,13 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  function persist(action: Promise<ActionResult<unknown>>) {
+  function persist<T>(action: Promise<ActionResult<T>>, onSuccess?: (data: T) => void) {
     const fail = (message: string) => {
       setError(message);
       router.refresh();
     };
     action.then(
-      (result) => !result.success && fail(result.error),
+      (result) => (result.success ? onSuccess?.(result.data) : fail(result.error)),
       () => fail("Something went wrong. Your board has been reloaded."),
     );
   }
@@ -206,7 +208,7 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
         cards: group.cards.map((card) => (card.id === cardId ? { ...card, ...changes } : card)),
       })),
     );
-    persist(updateCardAction({ cardId, ...changes }));
+    persist(updateCardAction({ cardId, ...changes }), ({ xp }) => xp !== null && setXp(xp));
   }
 
   function addCard(groupId: number, card: BoardCard) {

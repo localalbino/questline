@@ -138,7 +138,10 @@ export async function moveCardAction(input: z.input<typeof moveCardSchema>): Pro
   return { success: true, data: undefined };
 }
 
-export async function updateCardAction(input: z.input<typeof updateCardSchema>): Promise<ActionResult> {
+/** Returns the user's new XP total when completion changed, otherwise null. */
+export async function updateCardAction(
+  input: z.input<typeof updateCardSchema>,
+): Promise<ActionResult<{ xp: number | null }>> {
   const parsed = updateCardSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   const { cardId, ...changes } = parsed.data;
@@ -160,9 +163,9 @@ export async function updateCardAction(input: z.input<typeof updateCardSchema>):
       return { success: false, error: "Couldn't reach IGDB to award XP. Try again in a moment." };
     }
     const xp = xpForTimeToBeat(game?.timeToBeat ?? null) ?? 0;
-    await setCardCompleted(session.user.id, cardId, changes.isCompleted, xp);
+    return { success: true, data: { xp: await setCardCompleted(session.user.id, cardId, changes.isCompleted, xp) } };
   }
-  return { success: true, data: undefined };
+  return { success: true, data: { xp: null } };
 }
 
 export async function searchGamesAction(

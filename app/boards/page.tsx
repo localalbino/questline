@@ -1,6 +1,7 @@
 import { getBoardSummaries, MAX_BOARDS_PER_USER } from "@/db/boards";
 import { requireVerifiedSession } from "@/lib/session";
 import { cn } from "cn";
+import { PageHeader } from "@/ui/components/PageHeader";
 import Link from "next/link";
 
 type BoardSummary = Awaited<ReturnType<typeof getBoardSummaries>>[number];
@@ -16,12 +17,12 @@ export default async function BoardsPage() {
 
   return (
     <main className="flex min-h-dvh flex-col">
-      <header className="flex items-center gap-4 border-b border-zinc-800 px-4 py-3">
-        <h1 className="text-lg">Your boards</h1>
+      <PageHeader>
+        <h1 className="truncate text-lg">Your boards</h1>
         <span className="text-sm text-zinc-600">
           {boards.length}/{MAX_BOARDS_PER_USER}
         </span>
-      </header>
+      </PageHeader>
       <ul className="flex flex-wrap items-start gap-4 p-4">
         {boards.map((board) => (
           <li key={board.id}>

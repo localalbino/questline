@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "vitest";
-import { levelForXp, xpForLevel, xpForTimeToBeat } from "@/lib/experience";
+import { levelForXp, levelProgress, xpForLevel, xpForTimeToBeat } from "@/lib/experience";
 
 describe("xpForTimeToBeat", () => {
   test("awards 10 XP per hour", () => {
@@ -31,5 +31,17 @@ describe("levels", () => {
 
   test("a 100-hour game alone reaches level 4", () => {
     assert.equal(levelForXp(xpForTimeToBeat(100 * 3600)!), 4);
+  });
+});
+
+describe("levelProgress", () => {
+  test("measures progress from the start of the current level", () => {
+    // Level 4 starts at 900 XP and level 5 at 1600.
+    assert.deepEqual(levelProgress(1000), { level: 4, xpIntoLevel: 100, xpForNextLevel: 700 });
+  });
+
+  test("starts a fresh level at zero progress", () => {
+    assert.deepEqual(levelProgress(0), { level: 1, xpIntoLevel: 0, xpForNextLevel: 100 });
+    assert.deepEqual(levelProgress(100), { level: 2, xpIntoLevel: 0, xpForNextLevel: 300 });
   });
 });
