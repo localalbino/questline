@@ -1,7 +1,7 @@
 import { Session } from "@/lib/session";
 import { boardsTable, cardsTable, groupsTable } from "./schema";
 import { db } from ".";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, count, countDistinct, eq, inArray, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 
 export const MAX_BOARDS_PER_USER = 3;
@@ -25,6 +25,24 @@ export async function getOwnedBoard(session: Session, boardId: number): Promise<
     .where(and(eq(boardsTable.id, boardId), eq(boardsTable.ownerId, session.user.id)))
     .limit(1);
   return board;
+}
+
+/** Lists the user's boards with how many columns and games each has, oldest first. */
+export async function getBoardSummaries(session: Session) {
+  return db
+    .select({
+      id: boardsTable.id,
+      title: boardsTable.title,
+      columns: countDistinct(groupsTable.id),
+      games: count(cardsTable.id),
+      completed: count(sql`CASE WHEN ${cardsTable.isCompleted} THEN 1 END`),
+    })
+    .from(boardsTable)
+    .leftJoin(groupsTable, eq(groupsTable.boardId, boardsTable.id))
+    .leftJoin(cardsTable, eq(cardsTable.groupId, groupsTable.id))
+    .where(eq(boardsTable.ownerId, session.user.id))
+    .groupBy(boardsTable.id)
+    .orderBy(boardsTable.id);
 }
 
 /** Returns the group if its board belongs to the session's user, otherwise undefined. */
