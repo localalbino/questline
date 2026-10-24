@@ -55,13 +55,19 @@ export default async function BoardsPage() {
 
 function BoardTile({ board }: { board: BoardSummary }) {
   const progress = board.games === 0 ? 0 : board.completed / board.games;
+  // Every game beaten. Empty boards don't count.
+  const finished = board.games > 0 && board.completed === board.games;
 
   return (
     <Link
       href={`/boards/${board.id}`}
-      className={cn(tileClassName, "gap-1 bg-zinc-900 hover:ring-1 hover:ring-emerald-500")}
+      className={cn(
+        tileClassName,
+        "gap-1 bg-zinc-900",
+        finished ? "ring-1 ring-emerald-500 hover:ring-2" : "hover:ring-1 hover:ring-emerald-500",
+      )}
     >
-      <span className="truncate text-zinc-400">{board.title}</span>
+      <span className={cn("truncate", finished ? "text-emerald-500" : "text-zinc-400")}>{board.title}</span>
       <span className="text-xs text-zinc-600">
         {board.columns} {board.columns === 1 ? "column" : "columns"} · {board.games}{" "}
         {board.games === 1 ? "game" : "games"}

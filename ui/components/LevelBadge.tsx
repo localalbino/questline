@@ -15,7 +15,7 @@ export function LevelBadge() {
       className="fixed top-0 right-0 z-10 flex h-13 items-center gap-3 px-4 text-xs"
       title={`${xp} XP total · ${xpForNextLevel - xpIntoLevel} XP to level ${level + 1}`}
     >
-      <span className="shrink-0 text-sm text-emerald-500">Lv {level}</span>
+      <span className="shrink-0 bg-emerald-500 px-1.5 py-0.5 text-sm text-black">Lv {level}</span>
       <div className="flex w-24 flex-col gap-1 sm:w-48">
         <div
           role="progressbar"
