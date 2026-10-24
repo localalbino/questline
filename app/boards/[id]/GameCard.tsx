@@ -15,10 +15,12 @@ export function GameCard({
   card,
   groupId,
   onUpdate,
+  onDelete,
 }: {
   card: BoardCard;
   groupId: number;
   onUpdate: (changes: CardChanges) => void;
+  onDelete: () => void;
 }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: cardKey(card.id),
@@ -33,11 +35,21 @@ export function GameCard({
       {...listeners}
       className={cn(
         cardClassName,
-        "cursor-grab hover:ring-1 hover:ring-zinc-700 active:cursor-grabbing",
+        "group relative cursor-grab hover:ring-1 hover:ring-zinc-700 active:cursor-grabbing",
         isDragging && "opacity-40",
       )}
     >
       <CardContents card={card} onUpdate={onUpdate} />
+      <button
+        type="button"
+        onClick={onDelete}
+        onKeyDown={stopDragKeys}
+        className="absolute top-1 right-1 px-1 text-xs text-zinc-600 opacity-0 group-hover:opacity-100 hover:text-red-400 focus-visible:opacity-100"
+        aria-label={`Delete ${card.game?.title ?? "game"}`}
+        title="Delete game"
+      >
+        ✕
+      </button>
     </li>
   );
 }
@@ -58,7 +70,9 @@ function CardContents({ card, onUpdate }: { card: BoardCard; onUpdate?: (changes
     <>
       <BoxArt url={card.game?.boxArtUrl ?? null} title={title} />
       <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs">
-        <span className={cn("line-clamp-2 text-sm", card.isCompleted && "text-zinc-500 line-through")}>{title}</span>
+        <span className={cn("line-clamp-2 pr-4 text-sm", card.isCompleted && "text-zinc-500 line-through")}>
+          {title}
+        </span>
         <XpReward xp={xpForTimeToBeat(card.game?.timeToBeat ?? null)} isCompleted={card.isCompleted} />
         <DueDate
           dueDate={card.dueDate}

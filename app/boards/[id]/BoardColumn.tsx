@@ -11,12 +11,14 @@ type BoardColumnProps = {
   group: BoardGroup;
   onRename: (title: string) => void;
   onAddGame: () => void;
+  onDelete: () => void;
+  onDeleteCard: (card: BoardCard) => void;
   onUpdateCard: (cardId: number, changes: Partial<Pick<BoardCard, "isCompleted" | "dueDate">>) => void;
 };
 
 const columnClassName = "flex max-h-full w-72 shrink-0 flex-col bg-zinc-900";
 
-export function BoardColumn({ group, onRename, onAddGame, onUpdateCard }: BoardColumnProps) {
+export function BoardColumn({ group, onRename, onAddGame, onDelete, onDeleteCard, onUpdateCard }: BoardColumnProps) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: groupKey(group.id),
     data: { type: "group", groupId: group.id } satisfies DragData,
@@ -50,6 +52,16 @@ export function BoardColumn({ group, onRename, onAddGame, onUpdateCard }: BoardC
         >
           +
         </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          onKeyDown={stopDragKeys}
+          className="shrink-0 px-1 text-xs text-zinc-600 hover:text-red-400"
+          aria-label={`Delete column ${group.title}`}
+          title="Delete column"
+        >
+          ✕
+        </button>
       </header>
       <SortableContext items={group.cards.map((card) => cardKey(card.id))} strategy={verticalListSortingStrategy}>
         <ol className="flex min-h-12 flex-col gap-2 overflow-y-auto px-3 pb-3">
@@ -59,6 +71,7 @@ export function BoardColumn({ group, onRename, onAddGame, onUpdateCard }: BoardC
               card={card}
               groupId={group.id}
               onUpdate={(changes) => onUpdateCard(card.id, changes)}
+              onDelete={() => onDeleteCard(card)}
             />
           ))}
           {group.cards.length === 0 && (

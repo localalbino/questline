@@ -157,3 +157,62 @@ export async function moveCard(card: Card, toGroupId: number, toIndex: number): 
     ),
   );
 }
+
+/** Deletes a board the session's user owns; its columns and cards go with it. Returns whether it existed. */
+export async function deleteOwnedBoard(session: Session, boardId: number): Promise<boolean> {
+  const deleted = await db
+    .delete(boardsTable)
+    .where(and(eq(boardsTable.id, boardId), eq(boardsTable.ownerId, session.user.id)))
+    .returning({ id: boardsTable.id });
+  return deleted.length > 0;
+}
+
+/** Deletes a column and its cards, closing the gap in the remaining columns' ranks. */
+export async function deleteGroup(group: Group): Promise<void> {
+  const siblings = await db
+    .select({ id: groupsTable.id, rank: groupsTable.rank })
+    .from(groupsTable)
+    .where(eq(groupsTable.boardId, group.boardId))
+    .orderBy(groupsTable.rank, groupsTable.id);
+
+  await runBatch([
+    db.delete(groupsTable).where(eq(groupsTable.id, group.id)),
+    ...siblings
+      .filter((g) => g.id !== group.id)
+      .flatMap((g, rank) =>
+        Number(g.rank) === rank
+          ? []
+          : [
+              db
+                .update(groupsTable)
+                .set({ rank: String(rank) })
+                .where(eq(groupsTable.id, g.id)),
+            ],
+      ),
+  ]);
+}
+
+/** Deletes a card, closing the gap in its column's ranks. XP it awarded is kept. */
+export async function deleteCard(card: Card): Promise<void> {
+  const siblings = await db
+    .select({ id: cardsTable.id, rank: cardsTable.rank })
+    .from(cardsTable)
+    .where(eq(cardsTable.groupId, card.groupId))
+    .orderBy(cardsTable.rank, cardsTable.id);
+
+  await runBatch([
+    db.delete(cardsTable).where(eq(cardsTable.id, card.id)),
+    ...siblings
+      .filter((c) => c.id !== card.id)
+      .flatMap((c, rank) =>
+        Number(c.rank) === rank
+          ? []
+          : [
+              db
+                .update(cardsTable)
+                .set({ rank: String(rank) })
+                .where(eq(cardsTable.id, c.id)),
+            ],
+      ),
+  ]);
+}

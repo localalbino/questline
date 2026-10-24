@@ -12,9 +12,11 @@ export const groupTitleSchema = z
 export const createGroupSchema = z.object({ boardId: id, title: groupTitleSchema });
 export const renameGroupSchema = z.object({ groupId: id, title: groupTitleSchema });
 export const moveGroupSchema = z.object({ groupId: id, toIndex: z.int().nonnegative() });
+export const deleteGroupSchema = z.object({ groupId: id });
 
 export const addCardSchema = z.object({ groupId: id, gameId: id });
 export const moveCardSchema = z.object({ cardId: id, toGroupId: id, toIndex: z.int().nonnegative() });
+export const deleteCardSchema = z.object({ cardId: id });
 export const updateCardSchema = z.object({
   cardId: id,
   isCompleted: z.boolean().optional(),

@@ -21,10 +21,19 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+import { ConfirmDeleteDialog } from "@/ui/components/ConfirmDeleteDialog";
 import { useXp } from "@/ui/components/XpProvider";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
-import { createGroupAction, moveCardAction, moveGroupAction, renameGroupAction, updateCardAction } from "./actions";
+import {
+  createGroupAction,
+  deleteCardAction,
+  deleteGroupAction,
+  moveCardAction,
+  moveGroupAction,
+  renameGroupAction,
+  updateCardAction,
+} from "./actions";
 import { AddColumnForm } from "./AddColumnForm";
 import { BoardColumn, ColumnPreview } from "./BoardColumn";
 import { GameCardPreview } from "./GameCard";
@@ -92,6 +101,9 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<DragData | null>(null);
   const [searchGroupId, setSearchGroupId] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<
+    { type: "group"; group: BoardGroup } | { type: "card"; card: BoardCard } | null
+  >(null);
   // Where the board stood when the drag started, to diff against on drop and restore on cancel.
   const dragStartGroups = useRef<BoardGroup[] | null>(null);
 
@@ -215,6 +227,23 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
     setGroups((current) => withGroupCards(current, groupId, (cards) => [...cards, card]));
   }
 
+  // Deletes wait for the server rather than updating optimistically, since there's no undo.
+  async function deleteColumn(groupId: number): Promise<string | null> {
+    const result = await deleteGroupAction({ groupId });
+    if (!result.success) return result.error;
+    setGroups((current) => current.filter((group) => group.id !== groupId));
+    return null;
+  }
+
+  async function deleteCard(cardId: number): Promise<string | null> {
+    const result = await deleteCardAction({ cardId });
+    if (!result.success) return result.error;
+    setGroups((current) =>
+      current.map((group) => ({ ...group, cards: group.cards.filter((card) => card.id !== cardId) })),
+    );
+    return null;
+  }
+
   const activeGroup = active?.type === "group" ? groups.find((group) => group.id === active.groupId) : undefined;
   const activeCard = active?.type === "card" ? findCard(groups, active.cardId)?.card : undefined;
   const searchGroup = groups.find((group) => group.id === searchGroupId);
@@ -246,6 +275,8 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
                 group={group}
                 onRename={(title) => renameColumn(group.id, title)}
                 onAddGame={() => setSearchGroupId(group.id)}
+                onDelete={() => setPendingDelete({ type: "group", group })}
+                onDeleteCard={(card) => setPendingDelete({ type: "card", card })}
                 onUpdateCard={updateCard}
               />
             ))}
@@ -264,6 +295,29 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
           onAdded={(card) => addCard(searchGroup.id, card)}
           onClose={() => setSearchGroupId(null)}
         />
+      )}
+      {pendingDelete?.type === "group" && (
+        <ConfirmDeleteDialog
+          title={`Delete ${pendingDelete.group.title}?`}
+          confirmLabel="Delete column"
+          onConfirm={() => deleteColumn(pendingDelete.group.id)}
+          onClose={() => setPendingDelete(null)}
+        >
+          {pendingDelete.group.cards.length === 0
+            ? "This column is empty."
+            : `Its ${pendingDelete.group.cards.length} ${pendingDelete.group.cards.length === 1 ? "game goes" : "games go"} with it.`}{" "}
+          XP you&apos;ve earned stays.
+        </ConfirmDeleteDialog>
+      )}
+      {pendingDelete?.type === "card" && (
+        <ConfirmDeleteDialog
+          title={`Delete ${pendingDelete.card.game?.title ?? "this game"}?`}
+          confirmLabel="Delete game"
+          onConfirm={() => deleteCard(pendingDelete.card.id)}
+          onClose={() => setPendingDelete(null)}
+        >
+          It&apos;ll be removed from this board. XP you&apos;ve earned for it stays.
+        </ConfirmDeleteDialog>
       )}
     </div>
   );

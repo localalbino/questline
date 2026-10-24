@@ -7,6 +7,8 @@ import { cardsTable, groupsTable } from "@/db/schema";
 import {
   MAX_CARDS_PER_GROUP,
   MAX_GROUPS_PER_BOARD,
+  deleteCard,
+  deleteGroup,
   getOwnedBoard,
   getOwnedCard,
   getOwnedGroup,
@@ -22,6 +24,8 @@ import {
   ActionResult,
   addCardSchema,
   createGroupSchema,
+  deleteCardSchema,
+  deleteGroupSchema,
   moveCardSchema,
   moveGroupSchema,
   renameGroupSchema,
@@ -88,6 +92,18 @@ export async function moveGroupAction(input: z.input<typeof moveGroupSchema>): P
   return { success: true, data: undefined };
 }
 
+export async function deleteGroupAction(input: z.input<typeof deleteGroupSchema>): Promise<ActionResult> {
+  const parsed = deleteGroupSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+
+  const session = await requireVerifiedSession();
+  const group = await getOwnedGroup(session, parsed.data.groupId);
+  if (!group) return { success: false, error: NOT_FOUND };
+
+  await deleteGroup(group);
+  return { success: true, data: undefined };
+}
+
 export async function addCardAction(input: z.input<typeof addCardSchema>): Promise<ActionResult<BoardCard>> {
   const parsed = addCardSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
@@ -135,6 +151,18 @@ export async function moveCardAction(input: z.input<typeof moveCardSchema>): Pro
   }
 
   await moveCard(owned.card, toGroupId, toIndex);
+  return { success: true, data: undefined };
+}
+
+export async function deleteCardAction(input: z.input<typeof deleteCardSchema>): Promise<ActionResult> {
+  const parsed = deleteCardSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+
+  const session = await requireVerifiedSession();
+  const owned = await getOwnedCard(session, parsed.data.cardId);
+  if (!owned) return { success: false, error: NOT_FOUND };
+
+  await deleteCard(owned.card);
   return { success: true, data: undefined };
 }
 
