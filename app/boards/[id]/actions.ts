@@ -13,6 +13,8 @@ import {
   moveCard,
   moveGroup,
 } from "@/db/boards";
+import { setCardCompleted } from "@/db/experience";
+import { xpForTimeToBeat } from "@/lib/experience";
 import { requireVerifiedSession } from "@/lib/session";
 import { igdbClient, type GameDetails } from "@/lib/igdb-client";
 import { consumeRateLimit, type RateLimitRule } from "@/lib/rate-limit";
@@ -142,10 +144,24 @@ export async function updateCardAction(input: z.input<typeof updateCardSchema>):
   const { cardId, ...changes } = parsed.data;
 
   const session = await requireVerifiedSession();
-  if (!(await getOwnedCard(session, cardId))) return { success: false, error: NOT_FOUND };
-  if (changes.isCompleted === undefined && changes.dueDate === undefined) return { success: true, data: undefined };
+  const owned = await getOwnedCard(session, cardId);
+  if (!owned) return { success: false, error: NOT_FOUND };
 
-  await db.update(cardsTable).set(changes).where(eq(cardsTable.id, cardId));
+  if (changes.dueDate !== undefined) {
+    await db.update(cardsTable).set({ dueDate: changes.dueDate }).where(eq(cardsTable.id, cardId));
+  }
+
+  if (changes.isCompleted !== undefined && changes.isCompleted !== owned.card.isCompleted) {
+    // Look the reward up server side rather than trusting the client's copy of the game.
+    let game: GameDetails | undefined;
+    try {
+      [game] = (await igdbClient.getDetailsById([owned.card.gameId])) ?? [];
+    } catch {
+      return { success: false, error: "Couldn't reach IGDB to award XP. Try again in a moment." };
+    }
+    const xp = xpForTimeToBeat(game?.timeToBeat ?? null) ?? 0;
+    await setCardCompleted(session.user.id, cardId, changes.isCompleted, xp);
+  }
   return { success: true, data: undefined };
 }
 
