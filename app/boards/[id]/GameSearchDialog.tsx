@@ -1,7 +1,7 @@
 import type { GameDetails } from "@/lib/igdb-client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { addCardAction } from "./actions";
+import { addCardAction, searchGamesAction } from "./actions";
 import type { BoardCard } from "./types";
 
 type GameSearchDialogProps = {
@@ -18,17 +18,57 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
   const [query, setQuery] = useState("");
   const [addingId, setAddingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // TODO: debounce `query` and fetch results through a server action wrapping igdbClient.searchByTitle
-  // (it returns null when IGDB rate limits us). Paginate with its offset param.
-  const results: GameDetails[] = [];
+  const [search, setSearch] = useState<{ query: string; games: GameDetails[]; hasMore: boolean } | null>(null);
+  const [searching, setSearching] = useState(false);
+  const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Bumped on every search so responses that arrive after a newer search started are dropped.
+  const latestSearch = useRef(0);
+  const results = search?.games ?? [];
 
   useEffect(() => {
     // showModal gives us the backdrop, focus trapping, and Escape to close for free.
     // It also focuses the first focusable element (the close button), so move focus to the search box.
     dialogRef.current?.showModal();
     inputRef.current?.focus();
+    return () => clearTimeout(debounce.current);
   }, []);
+
+  async function runSearch(searchQuery: string, offset: number) {
+    const request = ++latestSearch.current;
+    setSearching(true);
+    setError(null);
+    const result = await searchGamesAction({ query: searchQuery, offset }).catch(() => ({
+      success: false as const,
+      error: "Search failed. Try again.",
+    }));
+    if (request !== latestSearch.current) return;
+
+    setSearching(false);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    setSearch((current) => ({
+      query: searchQuery,
+      games: offset === 0 ? result.data.games : [...(current?.games ?? []), ...result.data.games],
+      hasMore: result.data.hasMore,
+    }));
+  }
+
+  function changeQuery(value: string) {
+    setQuery(value);
+    clearTimeout(debounce.current);
+    const trimmed = value.trim();
+    if (!trimmed) {
+      latestSearch.current++;
+      setSearch(null);
+      setSearching(false);
+      return;
+    }
+    // Wait for a pause in typing; IGDB is rate limited and each search costs two requests.
+    setSearching(true);
+    debounce.current = setTimeout(() => runSearch(trimmed, 0), 300);
+  }
 
   async function addGame(game: GameDetails) {
     setAddingId(game.id);
@@ -42,6 +82,11 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
     onAdded(result.data);
     onClose();
   }
+
+  let emptyMessage: string | null = null;
+  if (!query.trim()) emptyMessage = "Start typing to search IGDB.";
+  else if (results.length === 0 && searching) emptyMessage = "Searching…";
+  else if (search && results.length === 0) emptyMessage = `No games found for "${search.query}".`;
 
   return (
     <dialog
@@ -70,7 +115,7 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => changeQuery(e.target.value)}
             placeholder="Search for a game"
             className="w-full bg-zinc-800 px-3 py-2 text-zinc-300 caret-emerald-500 outline-none focus:ring-1 focus:ring-emerald-500"
             aria-label="Search for a game"
@@ -107,11 +152,19 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
               </button>
             </li>
           ))}
-          {results.length === 0 && (
-            <li className="px-4 py-6 text-center text-sm text-zinc-600">
-              {query.trim() ? "Search isn't hooked up yet." : "Start typing to search IGDB."}
+          {search?.hasMore && (
+            <li>
+              <button
+                type="button"
+                disabled={searching}
+                onClick={() => runSearch(search.query, search.games.length)}
+                className="w-full px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-800 hover:text-zinc-400 disabled:opacity-50"
+              >
+                {searching ? "Loading…" : "Load more"}
+              </button>
             </li>
           )}
+          {emptyMessage && <li className="px-4 py-6 text-center text-sm text-zinc-600">{emptyMessage}</li>}
         </ul>
       </div>
     </dialog>

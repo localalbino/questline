@@ -21,4 +21,11 @@ export const updateCardSchema = z.object({
   dueDate: z.date().nullable().optional(),
 });
 
+export const SEARCH_PAGE_SIZE = 10;
+export const searchGamesSchema = z.object({
+  query: z.string().trim().min(1, "Search can't be empty").max(100, "Search must be at most 100 characters"),
+  // Keeps "Load more" from paging through IGDB forever.
+  offset: z.int().nonnegative().max(200),
+});
+
 export type ActionResult<T = undefined> = { success: true; data: T } | { success: false; error: string };

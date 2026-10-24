@@ -14,7 +14,8 @@ import {
   moveGroup,
 } from "@/db/boards";
 import { requireVerifiedSession } from "@/lib/session";
-import { igdbClient } from "@/lib/igdb-client";
+import { igdbClient, type GameDetails } from "@/lib/igdb-client";
+import { consumeRateLimit, type RateLimitRule } from "@/lib/rate-limit";
 import {
   ActionResult,
   addCardSchema,
@@ -22,6 +23,8 @@ import {
   moveCardSchema,
   moveGroupSchema,
   renameGroupSchema,
+  SEARCH_PAGE_SIZE,
+  searchGamesSchema,
   updateCardSchema,
 } from "./schema";
 import type { BoardCard, BoardGroup } from "./types";
@@ -30,6 +33,9 @@ import type { BoardCard, BoardGroup } from "./types";
 // asks for a refresh when an action fails. Refreshing re-queries IGDB, which is rate limited.
 
 const NOT_FOUND = "Not found";
+
+// IGDB allows 4 req/s for the whole app and each search costs two, so cap each user well below that.
+const SEARCH_RATE_LIMIT: RateLimitRule = { cooldown: 0, max: 30, window: 60 };
 
 function invalid(error: z.ZodError): { success: false; error: string } {
   return { success: false, error: error.issues[0]?.message ?? "Invalid input" };
@@ -141,4 +147,22 @@ export async function updateCardAction(input: z.input<typeof updateCardSchema>):
 
   await db.update(cardsTable).set(changes).where(eq(cardsTable.id, cardId));
   return { success: true, data: undefined };
+}
+
+export async function searchGamesAction(
+  input: z.input<typeof searchGamesSchema>,
+): Promise<ActionResult<{ games: GameDetails[]; hasMore: boolean }>> {
+  const parsed = searchGamesSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  const { query, offset } = parsed.data;
+
+  const session = await requireVerifiedSession();
+  const limit = await consumeRateLimit(`search:${session.user.id}`, SEARCH_RATE_LIMIT);
+  if (!limit.allowed) {
+    return { success: false, error: `Too many searches. Try again in ${limit.retryAfter}s.` };
+  }
+
+  const games = await igdbClient.searchByTitle(query, SEARCH_PAGE_SIZE, offset);
+  if (!games) return { success: false, error: "IGDB is busy right now. Try again in a moment." };
+  return { success: true, data: { games, hasMore: games.length === SEARCH_PAGE_SIZE } };
 }
