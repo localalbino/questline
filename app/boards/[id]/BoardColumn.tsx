@@ -36,7 +36,7 @@ export function BoardColumn({ group, onRename, onAddGame, onDelete, onDeleteCard
       <header
         {...attributes}
         {...listeners}
-        className="flex cursor-grab items-center gap-2 px-3 pt-3 pb-2 active:cursor-grabbing"
+        className="flex cursor-grab items-center gap-2 px-3 pt-3 pb-1 active:cursor-grabbing"
       >
         <ColumnTitle title={group.title} onRename={onRename} />
         <span className="shrink-0 text-xs text-zinc-600">
@@ -64,7 +64,8 @@ export function BoardColumn({ group, onRename, onAddGame, onDelete, onDeleteCard
         </button>
       </header>
       <SortableContext items={group.cards.map((card) => cardKey(card.id))} strategy={verticalListSortingStrategy}>
-        <ol className="flex min-h-12 flex-col gap-2 overflow-y-auto px-3 pb-3">
+        {/* Top padding leaves room for the first card's hover ring, which the scroll container would clip. */}
+        <ol className="flex min-h-12 flex-col gap-2 overflow-y-auto px-3 pt-1 pb-3">
           {group.cards.map((card) => (
             <GameCard
               key={card.id}
