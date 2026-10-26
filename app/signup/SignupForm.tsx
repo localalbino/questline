@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { submitSignupForm } from "./actions";
 import { FormLayout } from "@/ui/components/FormLayout";
 import { FormInput } from "@/ui/components/FormField";
+import { FormFooter } from "@/ui/components/FormFooter";
 import { FormMessage } from "@/ui/components/FormMessage";
 import { LinkPrompt } from "@/ui/components/LinkPrompt";
 import { SubmitButton } from "@/ui/components/SubmitButton";
@@ -36,12 +37,12 @@ export function SignupForm() {
           placeholder="Your Password"
           errors={state?.errors?.confirmPassword}
         />
-        <div className="mt-8 flex flex-col gap-4">
-          {state?.errors?.catchAll && <FormMessage variant="error">{state.errors.catchAll[0]}</FormMessage>}
-          <SubmitButton pending={pending}>Sign up</SubmitButton>
-        </div>
-        <LinkPrompt prompt="Already have an account?" href="/login" linkText="Sign in here" />
+        {state?.errors?.catchAll && <FormMessage variant="error">{state.errors.catchAll[0]}</FormMessage>}
+        <SubmitButton pending={pending}>Sign up</SubmitButton>
       </form>
+      <FormFooter>
+        <LinkPrompt prompt="Already have an account?" href="/login" linkText="Sign in here" />
+      </FormFooter>
     </FormLayout>
   );
 }

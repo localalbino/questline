@@ -8,9 +8,9 @@ type LinkPromptProps = {
 
 export function LinkPrompt({ prompt, href, linkText }: LinkPromptProps) {
   return (
-    <div className="flex flex-col items-center gap-1 text-center text-sm lg:flex-row lg:justify-center lg:gap-2">
+    <div className="flex flex-wrap justify-center gap-x-2 text-center text-sm">
       <span className="text-zinc-600">{prompt}</span>
-      <Link className="text-emerald-500 underline" href={href}>
+      <Link className="text-emerald-500 hover:underline" href={href}>
         {linkText}
       </Link>
     </div>

@@ -4,7 +4,9 @@ import { FormLayout } from "@/ui/components/FormLayout";
 import { SubmitButton } from "@/ui/components/SubmitButton";
 import { useActionState } from "react";
 import { signOutFromVerify, submitVerifyForm } from "./actions";
+import { FormFooter } from "@/ui/components/FormFooter";
 import { FormMessage } from "@/ui/components/FormMessage";
+import { OutlineButton } from "@/ui/components/OutlineButton";
 import { useCooldown } from "@/ui/hooks/useCooldown";
 
 type VerifyFormProps = {
@@ -36,12 +38,12 @@ export function VerifyForm({ email, linkInvalid, retryAfter }: VerifyFormProps) 
           {cooldown > 0 ? `Resend in ${cooldown}s` : "Send verification email"}
         </SubmitButton>
       </form>
-      <form action={signOutFromVerify} className="flex justify-center gap-2 text-sm">
-        <span className="text-zinc-600">Not {email}?</span>
-        <button type="submit" className="text-emerald-500 underline">
-          Sign out
-        </button>
-      </form>
+      <FormFooter>
+        <form action={signOutFromVerify} className="flex flex-col gap-2">
+          <span className="text-center text-sm text-zinc-600">Not {email}?</span>
+          <OutlineButton type="submit">Sign out</OutlineButton>
+        </form>
+      </FormFooter>
     </FormLayout>
   );
 }

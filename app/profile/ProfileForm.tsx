@@ -9,6 +9,7 @@ import { ConfirmDeleteDialog } from "@/ui/components/ConfirmDeleteDialog";
 import { FormInput } from "@/ui/components/FormField";
 import { FormLayout } from "@/ui/components/FormLayout";
 import { FormMessage } from "@/ui/components/FormMessage";
+import { OutlineButton } from "@/ui/components/OutlineButton";
 import { SubmitButton } from "@/ui/components/SubmitButton";
 import { useXp } from "@/ui/components/XpProvider";
 import { useCooldown } from "@/ui/hooks/useCooldown";
@@ -19,36 +20,29 @@ export function ProfileForm({ email, joinedAt }: { email: string; joinedAt: stri
 
   return (
     <FormLayout title="Profile">
-      <div className="flex w-full max-w-sm flex-col gap-10">
-        <Section title="Account">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="text-zinc-600">Email</dt>
-            <dd className="truncate text-zinc-400">{email}</dd>
-            <dt className="text-zinc-600">Joined</dt>
-            <dd className="text-zinc-400">{joinedAt}</dd>
-            <dt className="text-zinc-600">Level</dt>
-            <dd className="text-zinc-400">
-              {level} · {xp ?? 0} XP
-            </dd>
-          </dl>
-          <form action={signOutAction} className="flex flex-col">
-            <button
-              type="submit"
-              className="border border-emerald-500 px-2 py-1 text-emerald-500 hover:bg-emerald-500/10"
-            >
-              Sign out
-            </button>
-          </form>
-        </Section>
-        <ChangeEmailForm email={email} />
-        <Section title="Danger zone">
-          <ResetXpButton />
-          <DeleteAccountButton />
-        </Section>
-        <Link href="/boards" className="text-center text-sm text-zinc-600 hover:text-emerald-500">
-          Back to boards
-        </Link>
-      </div>
+      <Section title="Account">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt className="text-zinc-600">Email</dt>
+          <dd className="truncate text-zinc-400">{email}</dd>
+          <dt className="text-zinc-600">Joined</dt>
+          <dd className="text-zinc-400">{joinedAt}</dd>
+          <dt className="text-zinc-600">Level</dt>
+          <dd className="text-zinc-400">
+            {level} · {xp ?? 0} XP
+          </dd>
+        </dl>
+        <form action={signOutAction} className="flex flex-col">
+          <OutlineButton type="submit">Sign out</OutlineButton>
+        </form>
+      </Section>
+      <ChangeEmailForm email={email} />
+      <Section title="Danger zone">
+        <ResetXpButton />
+        <DeleteAccountButton />
+      </Section>
+      <Link href="/boards" className="text-center text-sm text-zinc-600 hover:text-emerald-500">
+        Back to boards
+      </Link>
     </FormLayout>
   );
 }

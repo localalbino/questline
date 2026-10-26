@@ -4,6 +4,7 @@ import { submitLoginForm } from "./actions";
 import { useActionState } from "react";
 import { FormLayout } from "@/ui/components/FormLayout";
 import { FormInput } from "@/ui/components/FormField";
+import { FormFooter } from "@/ui/components/FormFooter";
 import { FormMessage } from "@/ui/components/FormMessage";
 import { LinkPrompt } from "@/ui/components/LinkPrompt";
 import { SubmitButton } from "@/ui/components/SubmitButton";
@@ -32,14 +33,13 @@ export function LoginForm({ passwordReset }: { passwordReset: boolean }) {
           placeholder="Your Password"
           errors={state?.errors?.password}
         />
-        <div className="mt-8 flex flex-col gap-4">
-          {state?.errors?.catchAll && <FormMessage variant="error">{state.errors.catchAll[0]}</FormMessage>}
-          <SubmitButton pending={pending}>Sign in</SubmitButton>
-        </div>
-        <LinkPrompt prompt="Don't have an account?" href="/signup" linkText="Create one here" />
-        <span className="text-center text-zinc-600">OR</span>
-        <LinkPrompt prompt="Forgot your password?" href="/forgot-password" linkText="Send reset link" />
+        {state?.errors?.catchAll && <FormMessage variant="error">{state.errors.catchAll[0]}</FormMessage>}
+        <SubmitButton pending={pending}>Sign in</SubmitButton>
       </form>
+      <FormFooter>
+        <LinkPrompt prompt="Don't have an account?" href="/signup" linkText="Create one here" />
+        <LinkPrompt prompt="Forgot your password?" href="/forgot-password" linkText="Send reset link" />
+      </FormFooter>
     </FormLayout>
   );
 }
