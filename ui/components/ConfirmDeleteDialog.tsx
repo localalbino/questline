@@ -4,6 +4,7 @@ type ConfirmDeleteDialogProps = {
   title: string;
   children?: ReactNode;
   confirmLabel?: string;
+  pendingLabel?: string;
   /** Resolves to an error message to show, or null once the delete succeeded. */
   onConfirm: () => Promise<string | null>;
   onClose: () => void;
@@ -14,6 +15,7 @@ export function ConfirmDeleteDialog({
   title,
   children,
   confirmLabel = "Delete",
+  pendingLabel = "Deleting…",
   onConfirm,
   onClose,
 }: ConfirmDeleteDialogProps) {
@@ -69,7 +71,7 @@ export function ConfirmDeleteDialog({
             onClick={confirm}
             className="bg-red-500 px-3 py-1.5 text-sm text-black hover:bg-red-400 disabled:opacity-50"
           >
-            {pending ? "Deleting…" : confirmLabel}
+            {pending ? pendingLabel : confirmLabel}
           </button>
         </div>
       </div>

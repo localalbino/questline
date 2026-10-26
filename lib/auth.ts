@@ -72,6 +72,21 @@ export const auth = betterAuth({
         `Click this link to reset your password: ${url}\n\nDidn't request a password reset? Ignore this email.`,
       ),
   },
+  user: {
+    changeEmail: {
+      enabled: true,
+      // Asks the current address to approve first. Approving sends a verification link to the new
+      // address, and the email only changes once that one is clicked too.
+      sendChangeEmailConfirmation: ({ user, newEmail, url }) =>
+        sendEmail(
+          user.email,
+          "Confirm your email change",
+          `Someone asked to change your Questline email to ${newEmail}. Click this link to approve it: ${url}\n\nDidn't ask for this? Ignore this email and change your password.`,
+        ),
+    },
+    // Deletion asks for the password (see app/profile/actions.ts). Boards and XP cascade with the user.
+    deleteUser: { enabled: true },
+  },
   advanced: {
     // Emails are sent after the response so response time doesn't reveal whether the account exists.
     // Better Auth catches and logs failures before handing the promise over.

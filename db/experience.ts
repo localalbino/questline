@@ -39,3 +39,8 @@ export async function setCardCompleted(
   `);
   return getXp(userId);
 }
+
+/** Puts the user back at 0 XP. Completed cards stay completed; un-completing one later stays floored at 0. */
+export async function resetXp(userId: string): Promise<void> {
+  await db.delete(experienceTable).where(eq(experienceTable.userId, userId));
+}
