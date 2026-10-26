@@ -5,6 +5,8 @@ import { PageHeader } from "@/ui/components/PageHeader";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BoardView } from "./BoardView";
+import { consumeLookupRateLimit } from "./rate-limits";
+import { idSchema } from "./schema";
 import type { BoardGroup } from "./types";
 
 async function getGameDetails(gameIds: number[]): Promise<Map<number, GameDetails> | null> {
@@ -21,10 +23,11 @@ async function getGameDetails(gameIds: number[]): Promise<Map<number, GameDetail
 export default async function BoardPage({ params }: PageProps<"/boards/[id]">) {
   const session = await requireVerifiedSession();
 
-  const boardId = Number((await params).id);
-  if (!Number.isSafeInteger(boardId)) {
+  const parsedId = idSchema.safeParse(Number((await params).id));
+  if (!parsedId.success) {
     notFound();
   }
+  const boardId = parsedId.data;
 
   // Boards owned by other users 404 rather than 403 so we don't leak which ids exist.
   const board = await getBoardContents(session, boardId);
@@ -32,7 +35,10 @@ export default async function BoardPage({ params }: PageProps<"/boards/[id]">) {
     notFound();
   }
 
-  const games = await getGameDetails(board.groups.flatMap((group) => group.cards.map((card) => card.gameId)));
+  const gameIds = board.groups.flatMap((group) => group.cards.map((card) => card.gameId));
+  // Each load with games on it costs an IGDB request, from the same budget as adding and completing games.
+  const limit = gameIds.length > 0 ? await consumeLookupRateLimit(session) : null;
+  const games = limit && !limit.allowed ? null : await getGameDetails(gameIds);
   const groups: BoardGroup[] = board.groups.map((group) => ({
     id: group.id,
     title: group.title,
@@ -52,7 +58,13 @@ export default async function BoardPage({ params }: PageProps<"/boards/[id]">) {
           ← Boards
         </Link>
         <h1 className="truncate text-lg">{board.title}</h1>
-        {!games && <span className="truncate text-sm text-red-400">Couldn&apos;t load game details from IGDB</span>}
+        {limit && !limit.allowed ? (
+          <span className="truncate text-sm text-red-400">
+            Too many requests. Game details will be back in {limit.retryAfter}s.
+          </span>
+        ) : (
+          !games && <span className="truncate text-sm text-red-400">Couldn&apos;t load game details from IGDB</span>
+        )}
       </PageHeader>
       <BoardView boardId={board.id} initialGroups={groups} />
     </main>

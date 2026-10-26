@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 export const createBoardSchema = z.object({
-  title: z.string().min(2, "Board title must be at least 2 characters"),
+  // Matches the varchar(30) on boards.title.
+  title: z
+    .string()
+    .trim()
+    .min(2, "Board title must be at least 2 characters")
+    .max(30, "Board title must be at most 30 characters"),
 });
 
 export type CreateBoardFormState = {

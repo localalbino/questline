@@ -3,9 +3,9 @@
 import { z } from "zod";
 import { deleteOwnedBoard } from "@/db/boards";
 import { requireVerifiedSession } from "@/lib/session";
-import type { ActionResult } from "./[id]/schema";
+import { idSchema, type ActionResult } from "./[id]/schema";
 
-const deleteBoardSchema = z.object({ boardId: z.int().positive() });
+const deleteBoardSchema = z.object({ boardId: idSchema });
 
 export async function deleteBoardAction(input: z.input<typeof deleteBoardSchema>): Promise<ActionResult> {
   const parsed = deleteBoardSchema.safeParse(input);

@@ -9,6 +9,21 @@ export const MAX_BOARDS_PER_USER = 3;
 export const MAX_GROUPS_PER_BOARD = 10;
 export const MAX_CARDS_PER_GROUP = 50;
 
+// Triggers enforce the limits above in the database too, so concurrent requests can't all slip
+// past the app's count checks. See the enforce_limits migration, which has its own copy of the numbers.
+export const BOARDS_PER_USER_LIMIT = "boards_per_user_limit";
+export const GROUPS_PER_BOARD_LIMIT = "groups_per_board_limit";
+export const CARDS_PER_GROUP_LIMIT = "cards_per_group_limit";
+
+/** Whether a write failed because it would have gone over the given limit. */
+export function isLimitError(error: unknown, limit: string): boolean {
+  // Drizzle wraps the driver's error, so look through the causes.
+  for (let e: unknown = error; e instanceof Error; e = e.cause) {
+    if ("constraint" in e && e.constraint === limit) return true;
+  }
+  return false;
+}
+
 export type Board = typeof boardsTable.$inferSelect;
 export type Group = typeof groupsTable.$inferSelect;
 export type Card = typeof cardsTable.$inferSelect;

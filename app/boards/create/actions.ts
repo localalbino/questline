@@ -5,7 +5,7 @@ import { CreateBoardFormState, createBoardSchema } from "./schema";
 import { requireVerifiedSession } from "@/lib/session";
 import { db } from "@/db";
 import { boardsTable } from "@/db/schema";
-import { userCanCreateBoards } from "@/db/boards";
+import { BOARDS_PER_USER_LIMIT, isLimitError, userCanCreateBoards } from "@/db/boards";
 import { redirect } from "next/navigation";
 
 export async function submitCreateBoardForm(
@@ -25,10 +25,17 @@ export async function submitCreateBoardForm(
     redirect("/boards");
   }
 
-  const boards = await db
-    .insert(boardsTable)
-    .values({ title: validatedFields.data.title, ownerId: session.user.id })
-    .returning();
+  let boards: { id: number }[];
+  try {
+    boards = await db
+      .insert(boardsTable)
+      .values({ title: validatedFields.data.title, ownerId: session.user.id })
+      .returning({ id: boardsTable.id });
+  } catch (error) {
+    // Another request created a board after we counted.
+    if (isLimitError(error, BOARDS_PER_USER_LIMIT)) redirect("/boards");
+    throw error;
+  }
 
   if (boards.length <= 0) {
     return { success: false };

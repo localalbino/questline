@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-const id = z.int().positive();
+// Ids are Postgres integers; anything past int32 makes the query throw instead of finding nothing.
+export const idSchema = z.int32().positive();
+const id = idSchema;
 
 // Matches the varchar(30) on groups.title.
 export const groupTitleSchema = z
