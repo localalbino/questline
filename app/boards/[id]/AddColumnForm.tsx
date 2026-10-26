@@ -14,7 +14,7 @@ export function AddColumnForm({ onAdd }: { onAdd: (title: string) => Promise<str
     setError(null);
   }
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const parsed = groupTitleSchema.safeParse(title);
     if (!parsed.success) {
