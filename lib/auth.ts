@@ -19,7 +19,10 @@ export const EMAIL_RATE_LIMIT: RateLimitRule = { cooldown: 60, max: 5, window: 6
 const EMAIL_RATE_LIMITED_PATHS = ["/send-verification-email", "/request-password-reset"] as const;
 type EmailRateLimitedPath = (typeof EMAIL_RATE_LIMITED_PATHS)[number];
 
-function emailRateLimitKey(path: EmailRateLimitedPath, email: string) {
+// Limit per email address on sign in, so nobody can guess a password by brute force.
+export const SIGN_IN_RATE_LIMIT: RateLimitRule = { cooldown: 0, max: 10, window: 15 * 60 };
+
+function emailRateLimitKey(path: EmailRateLimitedPath | "/sign-in/email", email: string) {
   return `${path}:${email.trim().toLowerCase()}`;
 }
 
@@ -99,8 +102,9 @@ export const auth = betterAuth({
       // Runs for server action calls through auth.api too, which skip Better Auth's own rate limiter.
       const path = EMAIL_RATE_LIMITED_PATHS.find((p) => p === ctx.path);
       const email: unknown = ctx.body?.email;
-      if (path && typeof email === "string") {
-        const result = await consumeRateLimit(emailRateLimitKey(path, email), EMAIL_RATE_LIMIT);
+      const rule = path ? EMAIL_RATE_LIMIT : ctx.path === "/sign-in/email" ? SIGN_IN_RATE_LIMIT : null;
+      if (rule && typeof email === "string") {
+        const result = await consumeRateLimit(emailRateLimitKey(path ?? "/sign-in/email", email), rule);
         if (!result.allowed) {
           throw new APIError(
             "TOO_MANY_REQUESTS",

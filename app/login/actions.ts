@@ -4,7 +4,7 @@ import { z } from "zod";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { loginSchema, type LoginFormState } from "./schema";
-import { auth } from "@/lib/auth";
+import { auth, getRateLimitedRetryAfter } from "@/lib/auth";
 
 export async function submitLoginForm(prevState: LoginFormState, formData: FormData): Promise<LoginFormState> {
   const rawEmail = formData.get("email");
@@ -25,7 +25,11 @@ export async function submitLoginForm(prevState: LoginFormState, formData: FormD
       headers: await headers(),
     });
     emailVerified = result.user.emailVerified;
-  } catch {
+  } catch (error) {
+    const retryAfter = getRateLimitedRetryAfter(error);
+    if (retryAfter !== null) {
+      return { errors: { catchAll: [`Too many sign in attempts. Try again in ${retryAfter}s.`] }, values };
+    }
     return { errors: { catchAll: ["Incorrect email or password"] }, values };
   }
 
