@@ -1,10 +1,11 @@
 "use client";
 
 import { xpForStreak } from "@/lib/experience";
-import { STREAK_WEEKS, type StreakState } from "@/lib/streak";
+import { currentStreak, STREAK_WEEKS, type StreakState } from "@/lib/streak";
+import { ConfirmDeleteDialog } from "@/ui/components/ConfirmDeleteDialog";
 import { cn } from "cn";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useState, type PropsWithChildren } from "react";
+import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { setStreakWeeksAction } from "./actions";
 
 type StreakContextValue = { streak: StreakState; setStreak: (streak: StreakState) => void };
@@ -35,17 +36,21 @@ export function StreakControl({ boardId }: { boardId: number }) {
   const router = useRouter();
   const { streak, setStreak } = useStreak();
   const [error, setError] = useState<string | null>(null);
-  const { weeks, count, resetsAt, completed } = streak;
+  // A period choice waiting on confirmation, since switching would throw away a running streak.
+  const [pendingWeeks, setPendingWeeks] = useState<number | null>(null);
+  const now = useNow();
+  // The page can stay open past the end of a period, so work out where the streak stands as time passes.
+  const { weeks, count, resetsAt, completed } = currentStreak(streak, now);
 
-  async function changeWeeks(next: number) {
+  async function changeWeeks(next: number): Promise<string | null> {
     setError(null);
     const result = await setStreakWeeksAction({ boardId, weeks: next as (typeof STREAK_WEEKS)[number] });
-    if (result.success) {
-      setStreak(result.data);
-    } else {
-      setError(result.error);
+    if (!result.success) {
       router.refresh();
+      return result.error;
     }
+    setStreak(result.data);
+    return null;
   }
 
   return (
@@ -55,12 +60,20 @@ export function StreakControl({ boardId }: { boardId: number }) {
     >
       <span className={cn("flex items-center gap-0.5", completed ? "text-orange-500" : "text-zinc-500")}>
         <FlameIcon className="size-5" />
-        <span aria-label={`${count} in a row`}>{count}</span>
+        <span>
+          <span className="sr-only">Streak: </span>
+          {count}
+          <span className="sr-only"> in a row</span>
+        </span>
       </span>
       <select
         value={weeks}
         disabled={completed}
-        onChange={(e) => changeWeeks(Number(e.target.value))}
+        onChange={(e) => {
+          const next = Number(e.target.value);
+          if (count > 0) setPendingWeeks(next);
+          else changeWeeks(next).then((message) => message && setError(message));
+        }}
         className="bg-zinc-900 px-1 py-0.5 text-zinc-400 [color-scheme:dark] disabled:opacity-60"
         aria-label="Streak period"
         title={completed ? "You can change the period once this one ends" : undefined}
@@ -79,10 +92,22 @@ export function StreakControl({ boardId }: { boardId: number }) {
       {resetsAt && (
         // The time left depends on the clock, so the server and client can render it differently.
         <span className="text-zinc-600" suppressHydrationWarning>
-          {completed ? "next" : "ends"} in {formatTimeLeft(resetsAt)}
+          {completed ? "next" : "ends"} in {formatTimeLeft(resetsAt, now)}
         </span>
       )}
       {error && <span className="text-red-400">{error}</span>}
+      {pendingWeeks !== null && (
+        <ConfirmDeleteDialog
+          title="Start your streak over?"
+          confirmLabel="Start over"
+          pendingLabel="Switching…"
+          onConfirm={() => changeWeeks(pendingWeeks)}
+          onClose={() => setPendingWeeks(null)}
+        >
+          Switching to {formatStreakPeriod(pendingWeeks)} resets your {count} in a row back to 0. XP you&apos;ve earned
+          stays.
+        </ConfirmDeleteDialog>
+      )}
     </div>
   );
 }
@@ -97,9 +122,19 @@ function formatStreakPeriod(weeks: number): string {
   return `${weeks} ${weeks === 1 ? "week" : "weeks"}`;
 }
 
-function formatTimeLeft(resetsAt: Date): string {
+/** The current time, updated every minute. */
+function useNow(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return now;
+}
+
+function formatTimeLeft(resetsAt: Date, now: Date): string {
   // Rounds up, so a period that just started reads as its full length.
-  const hours = Math.max(1, Math.ceil((resetsAt.getTime() - Date.now()) / (60 * 60 * 1000)));
+  const hours = Math.max(1, Math.ceil((resetsAt.getTime() - now.getTime()) / (60 * 60 * 1000)));
   return hours >= 24 ? `${Math.ceil(hours / 24)}d` : `${hours}h`;
 }
 
