@@ -33,3 +33,11 @@ export function levelProgress(totalXp: number) {
     xpForNextLevel: xpForLevel(level + 1) - levelStart,
   };
 }
+
+// Streaks pay out per day of the period they cover, so longer periods are worth proportionally more.
+export const XP_PER_STREAK_DAY = 10;
+
+/** XP for completing one period of a streak that lasts the given number of weeks. */
+export function xpForStreak(weeks: number): number {
+  return weeks * 7 * XP_PER_STREAK_DAY;
+}

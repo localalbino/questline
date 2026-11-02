@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BoardView } from "./BoardView";
 import { consumeLookupRateLimit } from "./rate-limits";
+import { StreakControl } from "./StreakControl";
 import { idSchema } from "./schema";
 import type { BoardGroup } from "./types";
 
@@ -65,6 +66,9 @@ export default async function BoardPage({ params }: PageProps<"/boards/[id]">) {
         ) : (
           !games && <span className="truncate text-sm text-red-400">Couldn&apos;t load game details from IGDB</span>
         )}
+        <div className="ml-auto">
+          <StreakControl />
+        </div>
       </PageHeader>
       <BoardView boardId={board.id} initialGroups={groups} />
     </main>

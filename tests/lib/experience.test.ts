@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "vitest";
-import { levelForXp, levelProgress, xpForLevel, xpForTimeToBeat } from "@/lib/experience";
+import { levelForXp, levelProgress, xpForLevel, xpForStreak, xpForTimeToBeat } from "@/lib/experience";
 
 describe("xpForTimeToBeat", () => {
   test("awards 10 XP per hour", () => {
@@ -43,5 +43,12 @@ describe("levelProgress", () => {
   test("starts a fresh level at zero progress", () => {
     assert.deepEqual(levelProgress(0), { level: 1, xpIntoLevel: 0, xpForNextLevel: 100 });
     assert.deepEqual(levelProgress(100), { level: 2, xpIntoLevel: 0, xpForNextLevel: 300 });
+  });
+});
+
+describe("xpForStreak", () => {
+  test("pays per day of the period", () => {
+    assert.equal(xpForStreak(1), 70);
+    assert.equal(xpForStreak(52), 3640);
   });
 });
