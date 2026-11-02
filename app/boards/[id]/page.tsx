@@ -1,12 +1,13 @@
 import { getBoardContents } from "@/db/boards";
 import { igdbClient, type GameDetails } from "@/lib/igdb-client";
+import { currentStreak } from "@/lib/streak";
 import { requireVerifiedSession } from "@/lib/session";
 import { PageHeader } from "@/ui/components/PageHeader";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BoardView } from "./BoardView";
 import { consumeLookupRateLimit } from "./rate-limits";
-import { StreakControl } from "./StreakControl";
+import { StreakControl, StreakProvider } from "./StreakControl";
 import { idSchema } from "./schema";
 import type { BoardGroup } from "./types";
 
@@ -52,25 +53,37 @@ export default async function BoardPage({ params }: PageProps<"/boards/[id]">) {
     })),
   }));
 
+  const streak = currentStreak(
+    {
+      weeks: board.streakWeeks,
+      count: board.streakCount,
+      resetsAt: board.streakResetsAt,
+      completed: board.streakCompleted,
+    },
+    new Date(),
+  );
+
   return (
     <main className="flex h-dvh flex-col">
-      <PageHeader>
-        <Link href="/boards" className="shrink-0 text-zinc-600 hover:text-emerald-500">
-          ← Boards
-        </Link>
-        <h1 className="truncate text-lg">{board.title}</h1>
-        {limit && !limit.allowed ? (
-          <span className="truncate text-sm text-red-400">
-            Too many requests. Game details will be back in {limit.retryAfter}s.
-          </span>
-        ) : (
-          !games && <span className="truncate text-sm text-red-400">Couldn&apos;t load game details from IGDB</span>
-        )}
-        <div className="ml-auto">
-          <StreakControl />
-        </div>
-      </PageHeader>
-      <BoardView boardId={board.id} initialGroups={groups} />
+      <StreakProvider initialStreak={streak}>
+        <PageHeader>
+          <Link href="/boards" className="shrink-0 text-zinc-600 hover:text-emerald-500">
+            ← Boards
+          </Link>
+          <h1 className="truncate text-lg">{board.title}</h1>
+          {limit && !limit.allowed ? (
+            <span className="truncate text-sm text-red-400">
+              Too many requests. Game details will be back in {limit.retryAfter}s.
+            </span>
+          ) : (
+            !games && <span className="truncate text-sm text-red-400">Couldn&apos;t load game details from IGDB</span>
+          )}
+          <div className="ml-auto">
+            <StreakControl boardId={board.id} />
+          </div>
+        </PageHeader>
+        <BoardView boardId={board.id} initialGroups={groups} />
+      </StreakProvider>
     </main>
   );
 }

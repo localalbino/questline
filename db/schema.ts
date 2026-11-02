@@ -9,6 +9,13 @@ export const boardsTable = pgTable("boards", {
   ownerId: text("owner_id")
     .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" })
     .notNull(),
+  // Checking off a game completes the board's streak once per period. See lib/streak.ts.
+  streakWeeks: integer("streak_weeks").notNull().default(1),
+  // Periods completed in a row, which multiplies the streak's XP.
+  streakCount: integer("streak_count").notNull().default(0),
+  // When the current period ends. Null until the first completion starts the streak.
+  streakResetsAt: timestamp("streak_resets_at", { withTimezone: true }),
+  streakCompleted: boolean("streak_completed").notNull().default(false),
 });
 
 export const groupsTable = pgTable(
@@ -34,6 +41,9 @@ export const cardsTable = pgTable(
     gameId: integer("game_id").notNull(),
     dueDate: timestamp("due_date"),
     isCompleted: boolean().notNull().default(false),
+    // A game only counts toward its board's streak the first time it's checked off, so
+    // unchecking and rechecking it can't farm streak XP.
+    streakCounted: boolean("streak_counted").notNull().default(false),
     groupId: integer("group_id")
       .references(() => groupsTable.id, { onDelete: "cascade", onUpdate: "cascade" })
       .notNull(),

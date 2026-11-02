@@ -1,31 +1,69 @@
 "use client";
 
 import { xpForStreak } from "@/lib/experience";
+import { STREAK_WEEKS, type StreakState } from "@/lib/streak";
 import { cn } from "cn";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createContext, useContext, useState, type PropsWithChildren } from "react";
+import { setStreakWeeksAction } from "./actions";
 
-const STREAK_WEEKS = [1, 2, 3, 4, 8, 16, 20, 52] as const;
+type StreakContextValue = { streak: StreakState; setStreak: (streak: StreakState) => void };
 
-// TODO: Persist the period and completion per board, and only allow completing once per period.
-// Once that's stored, checking off a game on the board should complete the streak; the Complete
-// button below is only a placeholder for testing the UI and should be removed then.
-/** The board's streak: how long each period lasts, what it pays, and whether this period is done. */
-export function StreakControl() {
-  const [weeks, setWeeks] = useState<number>(1);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const xp = xpForStreak(weeks);
+const StreakContext = createContext<StreakContextValue | null>(null);
+
+/** Shares the board's streak between the header, which shows it, and the board, which completes it. */
+export function StreakProvider({ initialStreak, children }: PropsWithChildren<{ initialStreak: StreakState }>) {
+  const [streak, setStreak] = useState(initialStreak);
+  // A server refresh (e.g. after a failed action) hands us a fresh streak, which replaces ours.
+  const [prevInitialStreak, setPrevInitialStreak] = useState(initialStreak);
+  if (initialStreak !== prevInitialStreak) {
+    setPrevInitialStreak(initialStreak);
+    setStreak(initialStreak);
+  }
+
+  return <StreakContext value={{ streak, setStreak }}>{children}</StreakContext>;
+}
+
+export function useStreak() {
+  const context = useContext(StreakContext);
+  if (!context) throw new Error("useStreak must be used inside a StreakProvider");
+  return context;
+}
+
+/** The board's streak: its multiplier, how long each period lasts, what it pays, and whether this period is done. */
+export function StreakControl({ boardId }: { boardId: number }) {
+  const router = useRouter();
+  const { streak, setStreak } = useStreak();
+  const [error, setError] = useState<string | null>(null);
+  const { weeks, count, resetsAt, completed } = streak;
+
+  async function changeWeeks(next: number) {
+    setError(null);
+    const result = await setStreakWeeksAction({ boardId, weeks: next as (typeof STREAK_WEEKS)[number] });
+    if (result.success) {
+      setStreak(result.data);
+    } else {
+      setError(result.error);
+      router.refresh();
+    }
+  }
 
   return (
-    <div className="flex shrink-0 items-center gap-2 text-xs">
-      <FlameIcon className={cn("size-5", isCompleted ? "text-orange-500" : "text-zinc-500")} />
+    <div
+      className="flex shrink-0 items-center gap-2 text-xs"
+      title="Check off a game to complete this period's streak. Missing a period starts it over."
+    >
+      <span className={cn("flex items-center gap-0.5", completed ? "text-orange-500" : "text-zinc-500")}>
+        <FlameIcon className="size-5" />
+        <span aria-label={`${count} in a row`}>{count}</span>
+      </span>
       <select
         value={weeks}
-        onChange={(e) => {
-          setWeeks(Number(e.target.value));
-          setIsCompleted(false);
-        }}
-        className="bg-zinc-900 px-1 py-0.5 text-zinc-400 [color-scheme:dark]"
+        disabled={completed}
+        onChange={(e) => changeWeeks(Number(e.target.value))}
+        className="bg-zinc-900 px-1 py-0.5 text-zinc-400 [color-scheme:dark] disabled:opacity-60"
         aria-label="Streak period"
+        title={completed ? "You can change the period once this one ends" : undefined}
       >
         {STREAK_WEEKS.map((option) => (
           <option key={option} value={option}>
@@ -33,20 +71,18 @@ export function StreakControl() {
           </option>
         ))}
       </select>
-      {isCompleted ? (
-        <span className="text-orange-500">{xp} XP earned</span>
+      {completed ? (
+        <span className="text-orange-500">{xpForStreak(weeks, count)} XP earned</span>
       ) : (
-        <>
-          <span className="text-zinc-500">+{xp} XP</span>
-          <button
-            type="button"
-            onClick={() => setIsCompleted(true)}
-            className="border border-zinc-700 px-1.5 py-0.5 text-zinc-400 hover:border-orange-500 hover:text-orange-500"
-          >
-            Complete
-          </button>
-        </>
+        <span className="text-zinc-500">+{xpForStreak(weeks, count + 1)} XP</span>
       )}
+      {resetsAt && (
+        // The time left depends on the clock, so the server and client can render it differently.
+        <span className="text-zinc-600" suppressHydrationWarning>
+          {completed ? "next" : "ends"} in {formatTimeLeft(resetsAt)}
+        </span>
+      )}
+      {error && <span className="text-red-400">{error}</span>}
     </div>
   );
 }
@@ -59,6 +95,12 @@ function formatStreakPeriod(weeks: number): string {
     return `${months} ${months === 1 ? "month" : "months"}`;
   }
   return `${weeks} ${weeks === 1 ? "week" : "weeks"}`;
+}
+
+function formatTimeLeft(resetsAt: Date): string {
+  // Rounds up, so a period that just started reads as its full length.
+  const hours = Math.max(1, Math.ceil((resetsAt.getTime() - Date.now()) / (60 * 60 * 1000)));
+  return hours >= 24 ? `${Math.ceil(hours / 24)}d` : `${hours}h`;
 }
 
 function FlameIcon({ className }: { className?: string }) {

@@ -41,6 +41,7 @@ import { GameSearchDialog } from "./GameSearchDialog";
 import type { ActionResult } from "./schema";
 import type { BoardCard, BoardGroup } from "./types";
 import { groupKey, type DragData } from "./dnd";
+import { useStreak } from "./StreakControl";
 
 function findCard(groups: BoardGroup[], cardId: number) {
   for (const [groupIndex, group] of groups.entries()) {
@@ -87,6 +88,7 @@ const collisionDetection: CollisionDetection = (args) => {
 export function BoardView({ boardId, initialGroups }: { boardId: number; initialGroups: BoardGroup[] }) {
   const router = useRouter();
   const { setXp } = useXp();
+  const { setStreak } = useStreak();
   const dndId = useId();
 
   // Local state is the source of truth while editing; actions persist in the background.
@@ -220,7 +222,10 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
         cards: group.cards.map((card) => (card.id === cardId ? { ...card, ...changes } : card)),
       })),
     );
-    persist(updateCardAction({ cardId, ...changes }), ({ xp }) => xp !== null && setXp(xp));
+    persist(updateCardAction({ cardId, ...changes }), ({ xp, streak }) => {
+      if (xp !== null) setXp(xp);
+      if (streak) setStreak(streak);
+    });
   }
 
   function addCard(groupId: number, card: BoardCard) {

@@ -2,7 +2,14 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "vitest";
-import { levelForXp, levelProgress, xpForLevel, xpForStreak, xpForTimeToBeat } from "@/lib/experience";
+import {
+  MAX_STREAK_MULTIPLIER,
+  levelForXp,
+  levelProgress,
+  xpForLevel,
+  xpForStreak,
+  xpForTimeToBeat,
+} from "@/lib/experience";
 
 describe("xpForTimeToBeat", () => {
   test("awards 10 XP per hour", () => {
@@ -48,7 +55,12 @@ describe("levelProgress", () => {
 
 describe("xpForStreak", () => {
   test("pays per day of the period", () => {
-    assert.equal(xpForStreak(1), 70);
-    assert.equal(xpForStreak(52), 3640);
+    assert.equal(xpForStreak(1, 1), 70);
+    assert.equal(xpForStreak(52, 1), 3640);
+  });
+
+  test("multiplies by periods in a row, up to the cap", () => {
+    assert.equal(xpForStreak(1, 3), 210);
+    assert.equal(xpForStreak(1, MAX_STREAK_MULTIPLIER + 5), 70 * MAX_STREAK_MULTIPLIER);
   });
 });

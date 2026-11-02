@@ -18,10 +18,12 @@ import {
   moveCard,
   moveGroup,
 } from "@/db/boards";
-import { setCardCompleted } from "@/db/experience";
+import { getXp, setCardCompleted } from "@/db/experience";
+import { completeStreakWithCard, setStreakWeeks } from "@/db/streaks";
 import { xpForTimeToBeat } from "@/lib/experience";
 import { requireVerifiedSession } from "@/lib/session";
 import { igdbClient, type GameDetails } from "@/lib/igdb-client";
+import type { StreakState } from "@/lib/streak";
 import type { RateLimitResult } from "@/lib/rate-limit";
 import { consumeLookupRateLimit, consumeSearchRateLimit } from "./rate-limits";
 import {
@@ -35,6 +37,7 @@ import {
   renameGroupSchema,
   SEARCH_PAGE_SIZE,
   searchGamesSchema,
+  setStreakWeeksSchema,
   updateCardSchema,
 } from "./schema";
 import type { BoardCard, BoardGroup } from "./types";
@@ -188,10 +191,13 @@ export async function deleteCardAction(input: z.input<typeof deleteCardSchema>):
   return { success: true, data: undefined };
 }
 
-/** Returns the user's new XP total when completion changed, otherwise null. */
+/**
+ * Returns the user's new XP total when completion changed, otherwise null. Checking off a game also
+ * completes the board's streak for this period, and returns the streak as it then stands.
+ */
 export async function updateCardAction(
   input: z.input<typeof updateCardSchema>,
-): Promise<ActionResult<{ xp: number | null }>> {
+): Promise<ActionResult<{ xp: number | null; streak: StreakState | null }>> {
   const parsed = updateCardSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   const { cardId, dueDate, isCompleted } = parsed.data;
@@ -220,9 +226,31 @@ export async function updateCardAction(
       return { success: false, error: "Couldn't reach IGDB to award XP. Try again in a moment." };
     }
     const xp = xpForTimeToBeat(game?.timeToBeat ?? null) ?? 0;
-    return { success: true, data: { xp: await setCardCompleted(session.user.id, cardId, isCompleted, xp) } };
+    let total = await setCardCompleted(session.user.id, cardId, isCompleted, xp);
+    let streak: StreakState | null = null;
+    if (isCompleted) {
+      // The streak's XP comes from the board's stored period and count, never from the client.
+      streak = (await completeStreakWithCard(session.user.id, owned.boardId, cardId)) ?? null;
+      total = await getXp(session.user.id);
+    }
+    return { success: true, data: { xp: total, streak } };
   }
-  return { success: true, data: { xp: null } };
+  return { success: true, data: { xp: null, streak: null } };
+}
+
+export async function setStreakWeeksAction(
+  input: z.input<typeof setStreakWeeksSchema>,
+): Promise<ActionResult<StreakState>> {
+  const parsed = setStreakWeeksSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  const { boardId, weeks } = parsed.data;
+
+  const session = await requireVerifiedSession();
+  if (!(await getOwnedBoard(session, boardId))) return { success: false, error: NOT_FOUND };
+
+  const streak = await setStreakWeeks(boardId, weeks);
+  if (!streak) return { success: false, error: "You can change the streak period once this one ends." };
+  return { success: true, data: streak };
 }
 
 export async function searchGamesAction(

@@ -34,10 +34,12 @@ export function levelProgress(totalXp: number) {
   };
 }
 
-// Streaks pay out per day of the period they cover, so longer periods are worth proportionally more.
+// Streaks pay out per day of the period they cover, so longer periods are worth proportionally more,
+// times how many periods in a row have been completed, up to a cap.
 export const XP_PER_STREAK_DAY = 10;
+export const MAX_STREAK_MULTIPLIER = 10;
 
-/** XP for completing one period of a streak that lasts the given number of weeks. */
-export function xpForStreak(weeks: number): number {
-  return weeks * 7 * XP_PER_STREAK_DAY;
+/** XP for completing a streak period of the given length for the given time in a row. */
+export function xpForStreak(weeks: number, count: number): number {
+  return weeks * 7 * XP_PER_STREAK_DAY * Math.min(Math.max(count, 1), MAX_STREAK_MULTIPLIER);
 }

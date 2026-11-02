@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STREAK_WEEKS } from "@/lib/streak";
 
 // Ids are Postgres integers; anything past int32 makes the query throw instead of finding nothing.
 export const idSchema = z.int32().positive();
@@ -24,6 +25,8 @@ export const updateCardSchema = z.object({
   isCompleted: z.boolean().optional(),
   dueDate: z.date().nullable().optional(),
 });
+
+export const setStreakWeeksSchema = z.object({ boardId: id, weeks: z.literal(STREAK_WEEKS) });
 
 export const SEARCH_PAGE_SIZE = 10;
 export const searchGamesSchema = z.object({
