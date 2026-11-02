@@ -24,7 +24,11 @@ function isUnchanged(boardId: number, stored: StreakState) {
     eq(boardsTable.id, boardId),
     eq(boardsTable.streakWeeks, stored.weeks),
     eq(boardsTable.streakCount, stored.count),
-    stored.resetsAt ? eq(boardsTable.streakResetsAt, stored.resetsAt) : isNull(boardsTable.streakResetsAt),
+    // Dates in JS only keep milliseconds, so compare at that precision or a stored value with
+    // microseconds would never match.
+    stored.resetsAt
+      ? sql`date_trunc('milliseconds', ${boardsTable.streakResetsAt}) = ${stored.resetsAt.toISOString()}::timestamptz`
+      : isNull(boardsTable.streakResetsAt),
     eq(boardsTable.streakCompleted, stored.completed),
   );
 }
