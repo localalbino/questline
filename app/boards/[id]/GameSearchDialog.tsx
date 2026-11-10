@@ -2,7 +2,7 @@ import { xpForTimeToBeat } from "@/lib/experience";
 import type { GameDetails } from "@/lib/igdb-client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { addCardAction, searchGamesAction } from "./actions";
+import { useBoardActions } from "../board-actions";
 import type { BoardCard } from "./types";
 
 type GameSearchDialogProps = {
@@ -14,6 +14,7 @@ type GameSearchDialogProps = {
 
 /** Steam-style search popup for adding a game to a column. */
 export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: GameSearchDialogProps) {
+  const actions = useBoardActions();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -38,7 +39,7 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
     const request = ++latestSearch.current;
     setSearching(true);
     setError(null);
-    const result = await searchGamesAction({ query: searchQuery, offset }).catch(() => ({
+    const result = await actions.searchGames({ query: searchQuery, offset }).catch(() => ({
       success: false as const,
       error: "Search failed. Try again.",
     }));
@@ -74,7 +75,7 @@ export function GameSearchDialog({ groupId, groupTitle, onAdded, onClose }: Game
   async function addGame(game: GameDetails) {
     setAddingId(game.id);
     setError(null);
-    const result = await addCardAction({ groupId, gameId: game.id });
+    const result = await actions.addCard({ groupId, game });
     setAddingId(null);
     if (!result.success) {
       setError(result.error);

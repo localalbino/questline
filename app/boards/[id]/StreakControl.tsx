@@ -4,9 +4,8 @@ import { xpForStreak } from "@/lib/experience";
 import { currentStreak, STREAK_WEEKS, type StreakState } from "@/lib/streak";
 import { ConfirmDeleteDialog } from "@/ui/components/ConfirmDeleteDialog";
 import { cn } from "cn";
-import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
-import { setStreakWeeksAction } from "./actions";
+import { useBoardActions } from "../board-actions";
 
 type StreakContextValue = { streak: StreakState; setStreak: (streak: StreakState) => void };
 
@@ -33,7 +32,7 @@ export function useStreak() {
 
 /** The board's streak: its multiplier, how long each period lasts, what it pays, and whether this period is done. */
 export function StreakControl({ boardId }: { boardId: number }) {
-  const router = useRouter();
+  const actions = useBoardActions();
   const { streak, setStreak } = useStreak();
   const [error, setError] = useState<string | null>(null);
   // A period choice waiting on confirmation, since switching would throw away a running streak.
@@ -44,9 +43,9 @@ export function StreakControl({ boardId }: { boardId: number }) {
 
   async function changeWeeks(next: number): Promise<string | null> {
     setError(null);
-    const result = await setStreakWeeksAction({ boardId, weeks: next as (typeof STREAK_WEEKS)[number] });
+    const result = await actions.setStreakWeeks({ boardId, weeks: next as (typeof STREAK_WEEKS)[number] });
     if (!result.success) {
-      router.refresh();
+      actions.refresh();
       return result.error;
     }
     setStreak(result.data);

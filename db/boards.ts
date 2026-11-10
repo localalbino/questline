@@ -3,11 +3,9 @@ import { boardsTable, cardsTable, groupsTable } from "./schema";
 import { db } from ".";
 import { and, count, countDistinct, eq, inArray, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
+import { MAX_BOARDS_PER_USER } from "@/lib/limits";
 
-export const MAX_BOARDS_PER_USER = 3;
-// Keeps a single board from eating our Neon free tier storage.
-export const MAX_GROUPS_PER_BOARD = 10;
-export const MAX_CARDS_PER_GROUP = 50;
+export { MAX_BOARDS_PER_USER, MAX_GROUPS_PER_BOARD, MAX_CARDS_PER_GROUP } from "@/lib/limits";
 
 // Triggers enforce the limits above in the database too, so concurrent requests can't all slip
 // past the app's count checks. See the enforce_limits migration, which has its own copy of the numbers.

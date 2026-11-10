@@ -5,7 +5,7 @@ import { levelProgress } from "@/lib/experience";
 import { useXp } from "./XpProvider";
 
 /** The signed-in user's level and progress to the next one, pinned to the top right of every page. Opens the profile. */
-export function LevelBadge() {
+export function LevelBadge({ href = "/profile" }: { href?: string }) {
   const { xp } = useXp();
   if (xp === null) return null;
 
@@ -13,7 +13,7 @@ export function LevelBadge() {
   return (
     // Same height as PageHeader so it sits inside its row, in the space it leaves free.
     <Link
-      href="/profile"
+      href={href}
       className="fixed top-0 right-0 z-10 flex h-13 items-center gap-3 px-4 text-xs hover:bg-zinc-900"
       title={`${xp} XP total · ${xpForNextLevel - xpIntoLevel} XP to level ${level + 1}`}
     >

@@ -1,19 +1,18 @@
 "use client";
 
 import { ConfirmDeleteDialog } from "@/ui/components/ConfirmDeleteDialog";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { deleteBoardAction } from "./actions";
+import { useBoardActions } from "./board-actions";
 
 /** Sits over the corner of a board tile, outside its link, and confirms before deleting. */
 export function DeleteBoardButton({ boardId, title, games }: { boardId: number; title: string; games: number }) {
-  const router = useRouter();
+  const actions = useBoardActions();
   const [confirming, setConfirming] = useState(false);
 
   async function deleteBoard(): Promise<string | null> {
-    const result = await deleteBoardAction({ boardId });
+    const result = await actions.deleteBoard({ boardId });
     if (!result.success) return result.error;
-    router.refresh();
+    actions.refresh();
     return null;
   }
 

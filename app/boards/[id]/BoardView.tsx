@@ -23,17 +23,8 @@ import {
 } from "@dnd-kit/sortable";
 import { ConfirmDeleteDialog } from "@/ui/components/ConfirmDeleteDialog";
 import { useXp } from "@/ui/components/XpProvider";
-import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
-import {
-  createGroupAction,
-  deleteCardAction,
-  deleteGroupAction,
-  moveCardAction,
-  moveGroupAction,
-  renameGroupAction,
-  updateCardAction,
-} from "./actions";
+import { useBoardActions } from "../board-actions";
 import { AddColumnForm } from "./AddColumnForm";
 import { BoardColumn, ColumnPreview } from "./BoardColumn";
 import { GameCardPreview } from "./GameCard";
@@ -86,7 +77,7 @@ const collisionDetection: CollisionDetection = (args) => {
 };
 
 export function BoardView({ boardId, initialGroups }: { boardId: number; initialGroups: BoardGroup[] }) {
-  const router = useRouter();
+  const actions = useBoardActions();
   const { setXp } = useXp();
   const { setStreak } = useStreak();
   const dndId = useId();
@@ -118,7 +109,7 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
   function persist<T>(action: Promise<ActionResult<T>>, onSuccess?: (data: T) => void) {
     const fail = (message: string) => {
       setError(message);
-      router.refresh();
+      actions.refresh();
     };
     action.then(
       (result) => (result.success ? onSuccess?.(result.data) : fail(result.error)),
@@ -173,7 +164,7 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
       const newIndex = groups.findIndex((group) => groupKey(group.id) === over?.id);
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
       setGroups(arrayMove(groups, oldIndex, newIndex));
-      persist(moveGroupAction({ groupId: dragged.groupId, toIndex: newIndex }));
+      persist(actions.moveGroup({ groupId: dragged.groupId, toIndex: newIndex }));
       return;
     }
 
@@ -191,7 +182,7 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
     const start = findCard(startGroups, dragged.cardId);
     const end = findCard(next, dragged.cardId);
     if (!start || !end || (start.groupId === end.groupId && start.cardIndex === end.cardIndex)) return;
-    persist(moveCardAction({ cardId: dragged.cardId, toGroupId: end.groupId, toIndex: end.cardIndex }));
+    persist(actions.moveCard({ cardId: dragged.cardId, toGroupId: end.groupId, toIndex: end.cardIndex }));
   }
 
   function handleDragCancel() {
@@ -202,7 +193,7 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
 
   async function addColumn(title: string): Promise<string | null> {
     setError(null);
-    const result = await createGroupAction({ boardId, title });
+    const result = await actions.createGroup({ boardId, title });
     if (!result.success) return result.error;
     setGroups((current) => [...current, result.data]);
     return null;
@@ -211,7 +202,7 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
   function renameColumn(groupId: number, title: string) {
     setError(null);
     setGroups((current) => current.map((group) => (group.id === groupId ? { ...group, title } : group)));
-    persist(renameGroupAction({ groupId, title }));
+    persist(actions.renameGroup({ groupId, title }));
   }
 
   function updateCard(cardId: number, changes: Partial<Pick<BoardCard, "isCompleted" | "dueDate">>) {
@@ -222,7 +213,7 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
         cards: group.cards.map((card) => (card.id === cardId ? { ...card, ...changes } : card)),
       })),
     );
-    persist(updateCardAction({ cardId, ...changes }), ({ xp, streak }) => {
+    persist(actions.updateCard({ cardId, ...changes }), ({ xp, streak }) => {
       if (xp !== null) setXp(xp);
       if (streak) setStreak(streak);
     });
@@ -234,14 +225,14 @@ export function BoardView({ boardId, initialGroups }: { boardId: number; initial
 
   // Deletes wait for the server rather than updating optimistically, since there's no undo.
   async function deleteColumn(groupId: number): Promise<string | null> {
-    const result = await deleteGroupAction({ groupId });
+    const result = await actions.deleteGroup({ groupId });
     if (!result.success) return result.error;
     setGroups((current) => current.filter((group) => group.id !== groupId));
     return null;
   }
 
   async function deleteCard(cardId: number): Promise<string | null> {
-    const result = await deleteCardAction({ cardId });
+    const result = await actions.deleteCard({ cardId });
     if (!result.success) return result.error;
     setGroups((current) =>
       current.map((group) => ({ ...group, cards: group.cards.filter((card) => card.id !== cardId) })),
