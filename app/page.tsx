@@ -17,6 +17,12 @@ export default function Home() {
           </LinkButton>
         </div>
       </div>
+      <div className="flex w-full max-w-xs flex-col gap-2 sm:max-w-md">
+        <LinkButton href="/demo" variant="outline">
+          Try the demo
+        </LinkButton>
+        <span className="text-sm text-zinc-600">No account needed. Nothing you do there is saved.</span>
+      </div>
     </main>
   );
 }
