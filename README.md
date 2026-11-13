@@ -41,52 +41,52 @@ was stupid simple.
 ### Frontend
 
 - **React**: Used by Next as the default frontend framework. React
-would be my choice in most cases, as it has a mature ecosystem of
-plugins, component libraries, and tutorials for building quickly.
-Plus, my agent has plenty of training data to go around with it :).
+  would be my choice in most cases, as it has a mature ecosystem of
+  plugins, component libraries, and tutorials for building quickly.
+  Plus, my agent has plenty of training data to go around with it :).
 - **TailwindCSS**: Used for the app's styling across all pages and
-components. This is built into Next, but it was my default choice anyway. It
-allowed for quick ideation and prototyping of the auth and dashboard
-pages. I avoided using a component library such as shadcn/ui here so that
-I could get some practice in with Tailwind itself. That said, in general,
-I think it's probably best to pick up a component library when building
-small apps like this.
+  components. This is built into Next, but it was my default choice anyway. It
+  allowed for quick ideation and prototyping of the auth and dashboard
+  pages. I avoided using a component library such as shadcn/ui here so that
+  I could get some practice in with Tailwind itself. That said, in general,
+  I think it's probably best to pick up a component library when building
+  small apps like this.
 - **dnd-kit**: The main package for managing the drag and
-drop functions on a board's dashboard. This library seems to be a
-standard pick in the industry, and I was able to get functionality up
-quickly.
+  drop functions on a board's dashboard. This library seems to be a
+  standard pick in the industry, and I was able to get functionality up
+  quickly.
 - **Zod**: Zod allowed me to easily validate data on the frontend before
-sending it to the server. You just build out a schema with defined rules,
-and it will handle parsing and errors.
+  sending it to the server. You just build out a schema with defined rules,
+  and it will handle parsing and errors.
 
 ### Backend/Database
 
 - **Drizzle ORM**: A standard modern pick for a TypeScript ORM. I really
-enjoyed using this as a tool, since it stays close to SQL while
-still giving me the benefits that you'd want from TypeScript's type
-system. Would definitely use this again on any future TypeScript
-projects.
+  enjoyed using this as a tool, since it stays close to SQL while
+  still giving me the benefits that you'd want from TypeScript's type
+  system. Would definitely use this again on any future TypeScript
+  projects.
 - **Better Auth**: Better Auth handles all of the application's
-authentication and authorization. It allows me to place auth
-directly into my own database without the need for an external provider.
-It's easy to configure and has APIs for both the client and server.
-I decided to stick with Better Auth's default session implementation with
-cookies. I didn't need to expose an API to both a website and a mobile app
-for my setup, so I felt that bearer auth would be overkill.
+  authentication and authorization. It allows me to place auth
+  directly into my own database without the need for an external provider.
+  It's easy to configure and has APIs for both the client and server.
+  I decided to stick with Better Auth's default session implementation with
+  cookies. I didn't need to expose an API to both a website and a mobile app
+  for my setup, so I felt that bearer auth would be overkill.
 - **Resend**: Resend was my default choice for an email provider. I'd
-used this service before as part of my college capstone. It's easy to
-set up and easy to configure. I use it to send verification emails for sign
-up and for password resets. Its free tier is generous enough for a tiny
-app such as this one.
+  used this service before as part of my college capstone. It's easy to
+  set up and easy to configure. I use it to send verification emails for sign
+  up and for password resets. Its free tier is generous enough for a tiny
+  app such as this one.
 - **Neon**: Neon was the database provider I chose to use for this
-project. It runs on PostgreSQL, an industry standard at this point, and
-has several features that made it wonderful to work with for this project.
-First, I made heavy use of its database branching for
-development. I found this to be arguably the most useful thing they
-provide. I could just create a branch on the dashboard and update my .env.
-Second, the Drizzle and Next integrations worked seamlessly. I could run
-migrations through drizzle-kit and immediately see the results in the
-Vercel deployment.
+  project. It runs on PostgreSQL, an industry standard at this point, and
+  has several features that made it wonderful to work with for this project.
+  First, I made heavy use of its database branching for
+  development. I found this to be arguably the most useful thing they
+  provide. I could just create a branch on the dashboard and update my .env.
+  Second, the Drizzle and Next integrations worked seamlessly. I could run
+  migrations through drizzle-kit and immediately see the results in the
+  Vercel deployment.
 
 ## Design decisions
 
@@ -224,11 +224,11 @@ verification locally.
 ## What I'd do next
 
 - **Cache game details.** Every board load still hits IGDB for every game.
-Caching game details for a while (the demo already does this for a day)
-would cut down on IGDB calls and make refreshing after actions affordable.
+  Caching game details for a while (the demo already does this for a day)
+  would cut down on IGDB calls and make refreshing after actions affordable.
 - **Keep tabs in sync.** Since boards don't revalidate, two open tabs can
-drift apart. Refreshing when a tab regains focus would be a cheap fix.
+  drift apart. Refreshing when a tab regains focus would be a cheap fix.
 - **Board sharing.** Boards are private right now. A read-only share link
-would be a nice way to show off a backlog (or get called out for it).
+  would be a nice way to show off a backlog (or get called out for it).
 - **More from IGDB.** Platforms, genres, and release dates are all
-available, and filtering a board by them would help with bigger backlogs.
+  available, and filtering a board by them would help with bigger backlogs.
