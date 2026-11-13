@@ -5,7 +5,9 @@ with an integrated XP system to gamify finally catching up on your
 backlog.
 (Let's be honest, you have at least 10 games you need to play that you haven't gotten to yet...)
 
-**Try it out:** [https://questline.localalbino.com](Questline) No account needed: the demo at `/demo`
+**Try it out:** [Questline](https://questline.localalbino.com) 
+
+No account needed: the demo at `/demo`
 (linked from the home page) runs the real board UI, but everything stays in your
 browser tab and nothing gets written to the database. Sign up if you want your
 boards and XP to stick around.
